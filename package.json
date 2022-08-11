@@ -1,5 +1,5 @@
 {
-  "name": "assemblyai-demo-webhook-receiver-lambda",
+  "name": "assemblyai-testing-webhook-receiver-lambda",
   "version": "1.0.0",
   "description": "Example of a Python Flask API service backed by DynamoDB with traditional Serverless Framework",
   "author": "Jason W. Miller",
