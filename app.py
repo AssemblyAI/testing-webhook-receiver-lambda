@@ -27,7 +27,7 @@ def get_transcript_status(transcript_id):
     if not item:
         return jsonify({'error': 'Could not find status for the provided transcript_id'}), 404
 
-    return jsonify({'transcript_id': item.get('transcript_id').get('S'), 'status': item.get('status').get('S'), 'client_ip': item.get('client_ip').get('S'), 'http_code': item.get('http_code').get('S'), 'file_name': item.get('file_name').get('S'), 'created_at': item.get('created_at').get('S'), 'webhook_header': item.get('webhook_header').get('M')})
+    return jsonify({'transcript_id': item.get('transcript_id').get('S'), 'status': item.get('status').get('S'), 'client_ip': item.get('client_ip').get('S'), 'http_code': item.get('http_code').get('S'), 'file_name': item.get('file_name').get('S'), 'created_at': item.get('created_at').get('S'), 'webhook_headers': item.get('webhook_headers').get('M')})
 
 @app.route('/webhook', methods=['POST'])
 def handle_webhook():    
@@ -35,7 +35,7 @@ def handle_webhook():
     status = request.json.get('status')
     file_name = request.args.get('file_name', default='NOT PROVIDED') # optional file_name param example
     http_code = request.args.get('http_code', default='200') # optional http_code param to return
-    webhook_header = request.args.get("webhook_header", default={})
+    webhook_headers = dict(request.headers)
     now = datetime.now()
     created_at = now.strftime("%m/%d/%Y, %H:%M:%S")
     if request.headers.getlist("X-Forwarded-For"):
