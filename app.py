@@ -44,8 +44,7 @@ def handle_webhook():
         client_ip = request.remote_addr
     if not transcript_id or not status:
          return jsonify({'error': 'Please provide both "transcript_id" and "status"'}), 400
-    webhook_headers = {k: {"S": v} for k, v in dict(request.headers).items()}
-    print(webhook_headers)
+    webhook_headers = {k: request.headers.getList(k) for k, _ in dict(request.headers).items()}
     dynamodb_client.put_item(
         TableName=WEBHOOK_TABLE, Item={
             'transcript_id': {'S': transcript_id}, 
