@@ -1,4 +1,5 @@
 import os
+import json
 
 import boto3
 from boto3.dynamodb.types import TypeSerializer
@@ -28,7 +29,7 @@ def get_transcript_status(transcript_id):
     if not item:
         return jsonify({'error': 'Could not find status for the provided transcript_id'}), 404
 
-    return jsonify({'transcript_id': item.get('transcript_id').get('S'), 'status': item.get('status').get('S'), 'client_ip': item.get('client_ip').get('S'), 'http_code': item.get('http_code').get('S'), 'file_name': item.get('file_name').get('S'), 'created_at': item.get('created_at').get('S'), 'webhook_headers': item.get('webhook_headers').get('M')})
+    return jsonify({'transcript_id': item.get('transcript_id').get('S'), 'status': item.get('status').get('S'), 'client_ip': item.get('client_ip').get('S'), 'http_code': item.get('http_code').get('S'), 'file_name': item.get('file_name').get('S'), 'created_at': item.get('created_at').get('S'), 'webhook_headers': json.loads(item.get('webhook_headers').get('S'))})
 
 @app.route('/webhook', methods=['POST'])
 def handle_webhook():    
@@ -44,7 +45,7 @@ def handle_webhook():
         client_ip = request.remote_addr
     if not transcript_id or not status:
          return jsonify({'error': 'Please provide both "transcript_id" and "status"'}), 400
-    webhook_headers = {k: request.headers.getList(k) for k, _ in dict(request.headers).items()}
+    webhook_headers = {k: request.headers.getlist(k) for k, _ in dict(request.headers).items()}
     dynamodb_client.put_item(
         TableName=WEBHOOK_TABLE, Item={
             'transcript_id': {'S': transcript_id}, 
@@ -53,7 +54,7 @@ def handle_webhook():
             'http_code': {'S': http_code}, 
             'file_name': {'S': file_name}, 
             'created_at': {'S': created_at}, 
-            'webhook_headers': {'M': webhook_headers}
+            'webhook_headers': {'S': json.dumps(webhook_headers)}
             }
         )
     if http_code in ['400','403','404','429','500','503']:
