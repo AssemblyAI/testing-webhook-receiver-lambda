@@ -1,6 +1,7 @@
 import os
 
 import boto3
+from boto3.dynamodb.types import TypeSerializer
 from flask import Flask, jsonify, make_response, request
 from datetime import datetime
 
@@ -35,19 +36,27 @@ def handle_webhook():
     status = request.json.get('status')
     file_name = request.args.get('file_name', default='NOT PROVIDED') # optional file_name param example
     http_code = request.args.get('http_code', default='200') # optional http_code param to return
-    webhook_headers = dict(request.headers)
     now = datetime.now()
     created_at = now.strftime("%m/%d/%Y, %H:%M:%S")
     if request.headers.getlist("X-Forwarded-For"):
         client_ip = request.headers.getlist("X-Forwarded-For")[-1]
     else:
         client_ip = request.remote_addr
-
     if not transcript_id or not status:
          return jsonify({'error': 'Please provide both "transcript_id" and "status"'}), 400
-
+    webhook_headers = {k: {"S": v} for k, v in dict(request.headers).items()}
+    print(webhook_headers)
     dynamodb_client.put_item(
-        TableName=WEBHOOK_TABLE, Item={'transcript_id': {'S': transcript_id}, 'status': {'S': status}, 'client_ip': {'S': client_ip}, 'http_code': {'S': http_code}, 'file_name': {'S': file_name}, 'created_at': {'S': created_at}, 'webhook_header': {'M': webhook_header}})
+        TableName=WEBHOOK_TABLE, Item={
+            'transcript_id': {'S': transcript_id}, 
+            'status': {'S': status}, 
+            'client_ip': {'S': client_ip}, 
+            'http_code': {'S': http_code}, 
+            'file_name': {'S': file_name}, 
+            'created_at': {'S': created_at}, 
+            'webhook_headers': {'M': webhook_headers}
+            }
+        )
     if http_code in ['400','403','404','429','500','503']:
         return make_response(jsonify({'error': 'Custom error requested', 'transcript_id': transcript_id, 'client_ip': client_ip, 'http_code': http_code}), int(http_code))
     else:
