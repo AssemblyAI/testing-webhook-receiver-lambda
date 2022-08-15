@@ -36,11 +36,13 @@ def get_transcript_status(transcript_id):
         'http_code': item.get('http_code').get('S'), 
         'file_name': item.get('file_name').get('S'), 
         'created_at': item.get('created_at').get('S'), 
-        'webhook_headers': json.loads(item.get('webhook_headers').get('S'))
+        'webhook_headers': json.loads(item.get('webhook_headers').get('S')),
+        'post_attempts': item.get('post_attempts').get('N')
     })
 
 @app.route('/webhook', methods=['POST'])
-def handle_webhook():    
+def handle_webhook():
+    print(request.json)    
     transcript_id = request.json.get('transcript_id')
     status = request.json.get('status')
     file_name = request.args.get('file_name', default='NOT PROVIDED') # optional file_name param example
@@ -54,7 +56,15 @@ def handle_webhook():
     if not transcript_id or not status:
          return jsonify({'error': 'Please provide both "transcript_id" and "status"'}), 400
     webhook_headers = {k: v.split(',') for k, v in dict(request.headers).items()}
-    print(webhook_headers)
+
+    result = dynamodb_client.get_item(TableName=WEBHOOK_TABLE, Key={'transcript_id': {'S': transcript_id}})
+    item = result.get("Item")
+    print(F"PRINTING ITEM: {item}")
+    if item:
+        post_attempts = int(item.get('post_attempts').get('N')) + 1
+    else:
+        post_attempts = 1
+
     dynamodb_client.put_item(
         TableName=WEBHOOK_TABLE, Item={
             'transcript_id': {'S': transcript_id}, 
@@ -63,7 +73,8 @@ def handle_webhook():
             'http_code': {'S': http_code}, 
             'file_name': {'S': file_name}, 
             'created_at': {'S': created_at}, 
-            'webhook_headers': {'S': json.dumps(webhook_headers)}
+            'webhook_headers': {'S': json.dumps(webhook_headers)},
+            'post_attempts': {'N': str(post_attempts)}
             }
         )
     if http_code in ['400','403','404','429','500','503']:
