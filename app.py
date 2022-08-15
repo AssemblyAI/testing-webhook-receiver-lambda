@@ -29,7 +29,15 @@ def get_transcript_status(transcript_id):
     if not item:
         return jsonify({'error': 'Could not find status for the provided transcript_id'}), 404
 
-    return jsonify({'transcript_id': item.get('transcript_id').get('S'), 'status': item.get('status').get('S'), 'client_ip': item.get('client_ip').get('S'), 'http_code': item.get('http_code').get('S'), 'file_name': item.get('file_name').get('S'), 'created_at': item.get('created_at').get('S'), 'webhook_headers': json.loads(item.get('webhook_headers').get('S'))})
+    return jsonify({
+        'transcript_id': item.get('transcript_id').get('S'), 
+        'status': item.get('status').get('S'), 
+        'client_ip': item.get('client_ip').get('S'), 
+        'http_code': item.get('http_code').get('S'), 
+        'file_name': item.get('file_name').get('S'), 
+        'created_at': item.get('created_at').get('S'), 
+        'webhook_headers': json.loads(item.get('webhook_headers').get('S'))
+    })
 
 @app.route('/webhook', methods=['POST'])
 def handle_webhook():    
@@ -45,7 +53,8 @@ def handle_webhook():
         client_ip = request.remote_addr
     if not transcript_id or not status:
          return jsonify({'error': 'Please provide both "transcript_id" and "status"'}), 400
-    webhook_headers = {k: request.headers.getlist(k) for k, _ in dict(request.headers).items()}
+    webhook_headers = {k: v.split(',') for k, v in dict(request.headers).items()}
+    print(webhook_headers)
     dynamodb_client.put_item(
         TableName=WEBHOOK_TABLE, Item={
             'transcript_id': {'S': transcript_id}, 
