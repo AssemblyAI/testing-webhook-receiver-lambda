@@ -47,6 +47,7 @@ def handle_webhook():
     status = request.json.get('status')
     file_name = request.args.get('file_name', default='NOT PROVIDED') # optional file_name param example
     http_code = request.args.get('http_code', default='200') # optional http_code param to return
+    retry_success = int(request.args.get("retry_success", default=0))
     now = datetime.now()
     created_at = now.strftime("%m/%d/%Y, %H:%M:%S")
     if request.headers.getlist("X-Forwarded-For"):
@@ -79,6 +80,8 @@ def handle_webhook():
         )
     if http_code in ['400','403','404','429','500','503']:
         return make_response(jsonify({'error': 'Custom error requested', 'transcript_id': transcript_id, 'client_ip': client_ip, 'http_code': http_code}), int(http_code))
+    if retry_success > 0 and retry_success >= post_attempts:
+        return make_response(jsonify({'error': 'Forcing retry until success...', 'transcript_id': transcript_id, 'client_ip': client_ip, 'http_code': 400}), 400)
     else:
         return jsonify({'transcript_id': transcript_id, 'status': status, 'file_name': file_name, 'client_ip': client_ip, 'http_code': http_code, 'created_at': created_at}), 200
 
