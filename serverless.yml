@@ -1,11 +1,11 @@
-org: jasonwmiller
-app: assemblyai-demo-webhook-receiver-lambda
-service: assemblyai-demo-webhook-receiver-lambda
+
+
+service: assemblyai-testing-webhook-receiver-lambda 
 
 frameworkVersion: '3'
 
 custom:
-  tableName: 'webhookv2-table-${self:provider.stage}'
+  tableName: 'webhookv2--testing-table-${self:provider.stage}'
   wsgi:
     app: app.app
 
@@ -14,6 +14,7 @@ provider:
   runtime: python3.8
   stage: dev
   iam:
+    deploymentRole: arn:aws:iam::344839248844:role/engineering-on-call
     role:
       statements:
         - Effect: Allow
